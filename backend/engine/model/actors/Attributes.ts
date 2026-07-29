@@ -24,6 +24,7 @@ export class Attributes {
       case AttributeStat.Spirit:
         return this.spirit;
     }
+    return 0;
   }
 
   setStat(attr: AttributeStat, value: number): void {

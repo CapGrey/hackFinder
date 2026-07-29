@@ -3,6 +3,7 @@ import { Action } from "@engine/model/actions/Action";
 import { Effect } from "@engine/model/effects/Effect";
 import { ResourceCost } from "@engine/valueObjects/ResourceCost";
 import { AttributeStat } from "@engine/enums/AttributeStat";
+import { VitalPoolStat } from "@engine/enums/vitalPoolStat";
 import { createTestActor, type TestActor } from "./TestActor";
 import "./App.css";
 
@@ -39,7 +40,8 @@ export function App() {
   };
 
   const onCanAfford = () => {
-    const result = actor.canAfford(new ResourceCost());
+    const resourceCost: ResourceCost = [VitalPoolStat.StaminaPoints] ;
+    const result = actor.canAfford(resourceCost);
     note(`canAfford() → ${result}`);
     refresh();
   };
