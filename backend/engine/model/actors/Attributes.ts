@@ -23,8 +23,10 @@ export class Attributes {
         return this.mind;
       case AttributeStat.Spirit:
         return this.spirit;
+      default:
+        throw new Error(`Invalid attribute stat: ${attr}`);
     }
-    return 0;
+    
   }
 
   setStat(attr: AttributeStat, value: number): void {

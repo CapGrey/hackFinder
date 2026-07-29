@@ -8,15 +8,30 @@ import type { ActionContext } from "./ActionContext";
 import type { ActionResult } from "./ActionResult";
 
 export class Action {
-  id!: string;
-  name!: string;
-  phaseTrait!: PhaseTrait;
-  costTier!: ActionCostTier;
-  resourceCost!: ResourceCost;
-  occupancyTicks!: number;
-  duration!: DurationType;
-  tags!: Tag[];
-  targetShape!: ShapeTemplate;
+  id: string;
+  name: string;
+  phaseTrait: PhaseTrait;
+  costTier: ActionCostTier;
+  resourceCost: ResourceCost;
+  occupancyTicks: number;
+  duration: DurationType;
+  tags: Tag[];
+  targetShape: ShapeTemplate;
+
+  constructor(id: string, name: string, phaseTrait: PhaseTrait, 
+    costTier: ActionCostTier, resourceCost: ResourceCost, 
+    occupancyTicks: number, duration: DurationType, tags: Tag[], 
+    targetShape: ShapeTemplate) {
+    this.id = id;
+    this.name = name;
+    this.phaseTrait = phaseTrait;
+    this.costTier = costTier;
+    this.resourceCost = resourceCost;
+    this.occupancyTicks = occupancyTicks;
+    this.duration = duration;
+    this.tags = tags;
+    this.targetShape = targetShape;
+  }
 
   execute(_context: ActionContext): ActionResult {
     return {} as ActionResult;
