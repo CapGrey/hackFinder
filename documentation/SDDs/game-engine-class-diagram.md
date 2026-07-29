@@ -1,6 +1,6 @@
 # SDD: Hackfinder Game Engine — Class Diagram
 
-**Version:** 0.2  
+**Version:** 0.4  
 **Status:** Draft  
 **Source rules:** [gameRules/version_0.01.md](../gameRules/version_0.01.md)  
 **Language:** TypeScript (chosen for eventual Foundry VTT compatibility; Foundry integration is out of scope for this project)
@@ -21,9 +21,10 @@ Where this SDD clarifies or supersedes the rules bible for engine design, see [�
 
 | Layer | Classes | Responsibility |
 |-------|---------|----------------|
-| **View** | `UIService`, `DisplayService` | Capture user input and render output. Must not contain game-rule logic. |
-| **Controller** | `GameEngine`, `PhaseManager`, `TimeService`, `ResolutionService` | Orchestrate combat flow, enforce rules, resolve checks. |
-| **Model** | `Actor`, `GridMap`, `Terrain`, `Action`, `Effect` | Hold game state and domain data. |
+| **View** | `UIService`, `DisplayService` (frontend) | Capture user input and render output. Live under `frontend/`. Must not contain game-rule logic. |
+| **Controller** | `GameEngine`, `PhaseManager`, `TimeService`, `ResolutionService` | Orchestrate combat flow, enforce rules, resolve checks. Backend only. |
+| **Model** | `Actor`, `GridMap`, `Terrain`, `Action`, `Effect` | Hold game state and domain data. Backend only. |
+| **View contracts** | `Command`, `DisplayState` | DTOs on the engine API boundary. Backend `core/`; consumed by frontend adapters. |
 
 ### 2.2 Data Flow
 
@@ -63,28 +64,64 @@ flowchart TB
 
 **Constraint:** `DisplayService` receives a `DisplayState` snapshot only. It must not import or reference game-rule classes. `GameEngine` is the sole authority on rules.
 
-### 2.3 TypeScript Module Layout
+### 2.3 Repository Layout: Backend vs Frontend
 
-Target package structure for the TypeScript engine:
+The repo splits **backend** (rules engine) from **frontend** (UIs) at the top level. This is a **directory boundary**, not a networked API or Docker split. For v0.1 the character sheet imports the engine in-process.
+
+| Top-level | Role |
+|-----------|------|
+| `backend/` | Game engine / rules (pure TypeScript). No React/DOM. |
+| `frontend/` | User interfaces. First host: character sheet. |
+
+```mermaid
+flowchart LR
+  sheet[frontend/sheet]
+  engine[backend/engine]
+  sheet -->|"imports in-process"| engine
+```
+
+**Contracts vs implementations:**
+
+- Engine **API contracts** (`Command`, `DisplayState`, `EngineResult`) live under `backend/engine/core/`.
+- View **adapters** (`UIService`, `DisplayService`) live under `frontend/` — they call `handleCommand` / consume `DisplayState`. The engine does not import frontend code.
+
+#### Backend — `backend/engine/`
 
 ```
-engine/
-  core/           GameEngine, GameState, Command
-  phases/         PhaseManager, CombatPhase
-  time/           TimeService, ActionClock
-  resolution/     ResolutionService, RollRequest, RollResult, DamagePacket
-  model/
-    actors/       Actor, PC, Monster, Attributes, VitalPools, MonsterPacing
-    actions/      Action, ActionRegistry
-    effects/      Effect, Condition
-    grid/         GridMap, Coord, Terrain, shapes/
-    progression/  (deferred) CharacterBuild, Core, Archetype
-  services/
-    ui/           UIService
-    display/      DisplayService, DisplayState
+backend/
+  engine/
+    core/           GameEngine, GameState, Command, DisplayState, EngineResult
+    phases/         PhaseManager, CombatPhase
+    time/           TimeService, ActionClock
+    resolution/     ResolutionService, RollRequest, RollResult, DamagePacket
+    model/
+      actors/       Actor, PC, Monster, Attributes, VitalPools, MonsterPacing
+      actions/      Action, ActionContext, ActionResult, ActionRegistry
+      effects/      Effect, Condition
+      grid/         GridMap, Coord, Terrain, TerrainType, shapes/
+      progression/  (deferred) CharacterBuild, Core, Archetype
+    enums/          PhaseTrait, ActionCostTier, DurationType, DamageType, ProficiencyLevel, Tag
+    valueObjects/   ResourceCost
+    index.ts
 ```
 
 `ActionClock` lives under `time/` but is **owned only by `PC`** (composition on `PC`, not on abstract `Actor`).
+
+#### Frontend — `frontend/sheet/`
+
+First UI host (character sheet). Additional frontends (combat map, etc.) may appear as siblings under `frontend/`.
+
+```
+frontend/
+  sheet/
+    src/
+      main.tsx
+      App.tsx
+      services/
+        UIService.ts      # input adapter → Command → GameEngine
+        DisplayService.ts # renders DisplayState
+    index.html
+```
 
 ---
 
@@ -314,8 +351,8 @@ classDiagram
 | `PhaseManager` | Controller | Tracks current `CombatPhase`. Determines which actors may act and validates action phase traits and one-action-per-round. |
 | `TimeService` | Controller | Round counter; ticks **PC** action clocks only; clears `actedThisRound`; GM Periods (3 rounds); Escalation Die rolls; resets monster period budgets. |
 | `ResolutionService` | Controller | All D20 math: checks vs TN, defense rolls, Sparks/Shadows generation, damage application, meta-currency spending. |
-| `UIService` | View | Polls hardware input (keyboard, mouse, network). Returns `Command` objects to `GameEngine`. |
-| `DisplayService` | View | Renders a `DisplayState` snapshot. Swappable backend (ASCII, React, terminal). |
+| `UIService` | View (frontend) | Polls hardware input (keyboard, mouse). Builds `Command`s and calls `GameEngine.handleCommand`. Lives under `frontend/sheet/src/services/`. |
+| `DisplayService` | View (frontend) | Renders a `DisplayState` snapshot. Lives under `frontend/sheet/src/services/`. |
 | `GridMap` | Model | 2D coordinate space. Actor placement, terrain lookup, geometric shape plotting. |
 | `Coord` | Model | Immutable (x, y) grid coordinate value object. |
 | `Actor` | Model | Abstract base for combatants. Composes attributes, vitals, actions, effects; tracks `actedThisRound`. **Does not own clocks.** |
@@ -336,8 +373,8 @@ classDiagram
 | `DamagePacket` | Model | Typed damage payload: type, amount, tags, source actor. |
 | `ProficiencyTable` | Model | Maps skill/action categories to `ProficiencyLevel`. |
 | `CharacterBuild` | Model | (Deferred) Core, Archetypes, Ancestry, level, feat selections. |
-| `DisplayState` | View DTO | Immutable render snapshot: grid, actor positions, HP bars, phase, round. |
-| `Command` | View DTO | User intent from `UIService`: UseAction, MoveActor, SpendSpark, EndPhase, etc. |
+| `DisplayState` | Backend DTO (`core/`) | Immutable render snapshot: grid, actor positions, HP bars, phase, round. Produced by engine; consumed by frontend. |
+| `Command` | Backend DTO (`core/`) | User intent into `GameEngine.handleCommand`: UseAction, MoveActor, SpendSpark, EndPhase, etc. |
 
 ---
 
@@ -588,7 +625,7 @@ Seven duration types map to `Effect.duration: DurationType`. `TimeService` and `
 
 ### 7.8 Display boundary
 
-`GameEngine.getDisplayState()` projects internal model to `DisplayState`. Any renderer (ASCII, React, terminal) implements `DisplayService` against that DTO.
+`GameEngine.getDisplayState()` projects internal model to `DisplayState`. Frontend `DisplayService` (under `frontend/sheet/src/services/`) renders that DTO. The engine never imports frontend modules.
 
 ### 7.9 Elite monsters are a flag, not a subclass
 
@@ -685,7 +722,8 @@ sequenceDiagram
 | Resolution | `ResolutionService`, `RollRequest`, `RollResult`, `DamagePacket` | D20 vs TN, Sparks/Shadows |
 | Grid | `GridMap`, `Coord`, `Terrain`, `ShapeTemplate` | Sphere, Cone45, Path |
 | Effects | `Effect`, `Condition` | Duration types 1–5 (through EncounterLong) |
-| View stubs | `UIService`, `DisplayService`, `DisplayState`, `Command` | Headless, ASCII, or React sheet later |
+| Engine view contracts | `DisplayState`, `Command` | Backend `core/` DTOs |
+| Frontend view stubs | `UIService`, `DisplayService` | Under `frontend/sheet/src/services/` |
 | Reference Core | One Core engine (Psionic Guard recommended) | Validates Core-as-Action-subclass pattern |
 
 ### 9.2 Out of Scope
@@ -746,6 +784,8 @@ Items marked placeholder or underspecified in `version_0.01.md`. Resolve before 
 |---------|------|---------|
 | 0.1 | 2026-07-28 | Initial class diagram SDD |
 | 0.2 | 2026-07-28 | TypeScript target; remove NPC/Disposition; PC-only ActionClocks; one action per round; Monster Period/Escalation pacing via MonsterPacing; clarifications vs rules bible |
+| 0.3 | 2026-07-28 | Repo layout: `backend/engine/` vs `frontend/sheet/`; directory split (not Docker/API); UI contracts in backend, React adapters in frontend |
+| 0.4 | 2026-07-28 | Move `UIService` / `DisplayService` to frontend; keep `Command` / `DisplayState` as backend `core/` DTOs; remove `backend/engine/services/` |
 
 ---
 
@@ -765,3 +805,5 @@ This SDD **supersedes** the following for engine design (rules bible may lag unt
 | Quick actions | Usable while clocks on cooldown | Still usable under clock rules, but **counts as the round’s one action** in v0.1 |
 | Foundry | Mentioned as future VTT host | Out of project scope; TS chosen for eventual compatibility |
 | Minions / summons | Not designed | Deferred (OQ-09) |
+| Repo layout | Bare `engine/` sketch | **`backend/engine/`** + **`frontend/sheet/`** (directory split; in-process import) |
+| View services | Sketch under engine `services/` | **`UIService` / `DisplayService` in frontend**; **`Command` / `DisplayState` in backend `core/`** |

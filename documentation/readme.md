@@ -10,10 +10,17 @@ Design documents and game rules for the Hackfinder TTRPG and VTT engine.
 
 ### Software Design Documents (SDDs)
 
-- [game-engine-class-diagram.md](SDDs/game-engine-class-diagram.md) — TypeScript OOP class diagram (v0.2): MVC architecture, PC/Monster actors, enums/value objects, action extension pattern, sequence diagrams, and engine v0.1 scope boundary.
+- [game-engine-class-diagram.md](SDDs/game-engine-class-diagram.md) — TypeScript OOP class diagram (v0.4): MVC architecture, `backend/engine` vs `frontend/sheet`, view adapters on frontend, PC/Monster actors, and engine v0.1 scope boundary.
+
+## Code layout
+
+| Path | Role |
+|------|------|
+| `backend/engine/` | Game rules engine (pure TypeScript); `Command` / `DisplayState` in `core/` |
+| `frontend/sheet/` | Character sheet UI; `UIService` / `DisplayService` in `src/services/` |
 
 ## Reading Order
 
 1. Start with **gameRules/version_0.01.md** to understand the game systems.
-2. Read **SDDs/game-engine-class-diagram.md** to see how those rules map to engine classes.
+2. Read **SDDs/game-engine-class-diagram.md** to see how those rules map to engine classes and repo layout.
 3. Implement engine v0.1 per the SDD scope section before expanding to progression, equipment, or networking.
