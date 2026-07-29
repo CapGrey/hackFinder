@@ -1,3 +1,4 @@
+export { AttributeStat } from "./enums/AttributeStat";
 export { Attributes } from "./model/actors/Attributes";
 export { VitalPools } from "./model/actors/VitalPools";
 export { Actor } from "./model/actors/Actor";
