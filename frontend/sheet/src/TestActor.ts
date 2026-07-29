@@ -25,7 +25,7 @@ export function createTestActor(): TestActor {
   const actor = new TestActor();
   actor.id = "test-1";
   actor.name = "Test Actor";
-  actor.attributes = new Attributes();
+  actor.attributes = new Attributes(2, 3, 1, 1);
   actor.vitals = new VitalPools();
   actor.knownActions = [new ActionClass()];
   actor.activeEffects = [];
