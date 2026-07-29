@@ -10,7 +10,7 @@ Design documents and game rules for the Hackfinder TTRPG and VTT engine.
 
 ### Software Design Documents (SDDs)
 
-- [game-engine-class-diagram.md](SDDs/game-engine-class-diagram.md) — Language-agnostic OOP class diagram, MVC architecture, enums/value objects, action extension pattern, sequence diagrams, and engine v0.1 scope boundary.
+- [game-engine-class-diagram.md](SDDs/game-engine-class-diagram.md) — TypeScript OOP class diagram (v0.2): MVC architecture, PC/Monster actors, enums/value objects, action extension pattern, sequence diagrams, and engine v0.1 scope boundary.
 
 ## Reading Order
 
