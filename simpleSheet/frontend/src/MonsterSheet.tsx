@@ -16,10 +16,10 @@ const ATTRS = [
 
 const VITALS = [
   { stat: VitalPoolStat.HitPoints, label: "HP" },
-  { stat: VitalPoolStat.EndurancePoints, label: "EP" },
-  { stat: VitalPoolStat.SanityPoints, label: "SP" },
-  { stat: VitalPoolStat.StaminaPoints, label: "Stamina" },
-  { stat: VitalPoolStat.ManaPoints, label: "Mana" },
+  //{ stat: VitalPoolStat.EndurancePoints, label: "EP" },
+  //{ stat: VitalPoolStat.SanityPoints, label: "SP" },
+  //{ stat: VitalPoolStat.StaminaPoints, label: "Stamina" },
+  //{ stat: VitalPoolStat.ManaPoints, label: "Mana" },
 ] as const;
 
 const BUDGET_TIERS = [
